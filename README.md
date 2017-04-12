@@ -23,9 +23,7 @@ Keeping track of all these client/application/directory/tenant ids and secrets i
 | Config Option | Description  |
 |---|---|
 | ADL_CLIENT_ID | Application/client id of the application with Contributor access to Azure Data Lake  |
-|---|---|
 | ADL_CLIENT_SECRET | Key/client secret of the application with Contributor access to Azure Data Lake  |
-|---|---|
 | TENANT_ID | Directory/tenant id of your Azure subscription account |
 
 ## Doing Stuff
