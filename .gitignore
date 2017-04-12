@@ -1,0 +1,4 @@
+venv
+*.pyc
+.DS_Store
+azure_utils/local_config.py
