@@ -6,7 +6,7 @@ A set of utilities for interacting with Azure Cloud from Python. Most of the fun
 
 Clone from Github (this isn't on pypi yet).
 
-`git clone https://github.com/NewKnowledge/azure_utils.git`
+`git clone https://github.com/NewKnowledge/azure-utils.git`
 
 ## Azure Setup and Authentication
 
@@ -34,13 +34,11 @@ The [Azure Data Lake Store library](https://github.com/Azure/azure-data-lake-sto
 
 #### Getting a client
 
-This gets a client instance using the auth values in your `config.py`
+This gets a client instance using the auth values and in your .env file (`datalake.env` by default).
 
 ```python
-from client import get_adl_client
-
-store_name = 'your-data-lake'
-adl = get_adl_client(store_name)
+from azure_utils import get_datalake_client
+adl = get_datalake_client(envfile='datalake.env')
 ```
 
 #### Using the client
@@ -62,11 +60,12 @@ Most of the `AzureDLFileSystem` methods mirror bash file system directives, and 
 
 #### Utilities 
 
-Put the contents of a directory in the lake. 
+Download/Upload a list of files to/from the datalake:
 
 ```python
-from adl import put_dir
-put_dir(adl, 'path/to/local/dir', 'path/to/lake/dir')
+from azure_utils import upload_files_to_datalake, download_files_from_datalake
+upload_files_to_datalake(adl, ['list/of/local', 'file/paths'], destination_dir='remote/dir')
+download_files_from_datalake(adl, ['list/of/remote', 'file/paths'], destination_dir='local/dir')
 ```
 
-More coming soon. 
+ 
