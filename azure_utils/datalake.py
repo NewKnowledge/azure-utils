@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from azure.datalake.store import core, lib, multithread
 
 
-def upload_files_to_datalake(datalake_client, source_filepaths, destination_dir='uploads'):
+def datalake_upload(datalake_client, source_filepaths, destination_dir='uploads'):
     ''' uploads files to the data lake given the local filepaths '''
     for source in source_filepaths:
         # datalake_client.put(source, target_dir)  # non-multithread alternative
@@ -20,7 +20,7 @@ def upload_files_to_datalake(datalake_client, source_filepaths, destination_dir=
                                 blocksize=4194304)
 
 
-def download_files_from_datalake(datalake_client, source_filepaths, destination_dir='datalake-downloads'):
+def datalake_download(datalake_client, source_filepaths, destination_dir='datalake-downloads'):
     ''' downloads files from the data lake given the remote filepaths '''
     for source in source_filepaths:
         filename = source.split('/')[-1]

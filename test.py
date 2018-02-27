@@ -1,8 +1,7 @@
 import subprocess
 from os.path import isfile
 
-from azure_utils import (download_files_from_datalake, get_datalake_client,
-                         upload_files_to_datalake)
+from azure_utils import datalake_download, get_datalake_client, datalake_upload
 
 
 def test_datalake_file_management():
@@ -11,9 +10,9 @@ def test_datalake_file_management():
     print('initializing datalake client')
     client = get_datalake_client()
     print('uploading')
-    upload_files_to_datalake(client, ['test.txt'])
+    datalake_upload(client, ['test.txt'])
     print('downloading')
-    download_files_from_datalake(client, ['uploads/test.txt'])
+    datalake_download(client, ['uploads/test.txt'])
 
     assert isfile('datalake-downloads/test.txt')
 

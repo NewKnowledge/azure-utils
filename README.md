@@ -65,9 +65,9 @@ Most of the `AzureDLFileSystem` methods mirror bash file system directives, and 
 Download/Upload a list of files to/from the datalake:
 
 ```python
-from azure_utils import upload_files_to_datalake, download_files_from_datalake
-upload_files_to_datalake(adl, ['list/of/local', 'file/paths'], destination_dir='remote/dir')
-download_files_from_datalake(adl, ['list/of/remote', 'file/paths'], destination_dir='local/dir')
+from azure_utils import datalake_upload, datalake_download
+datalake_upload(adl, ['list/of/local', 'file/paths'], destination_dir='remote/dir')
+datalake_download(adl, ['list/of/remote', 'file/paths'], destination_dir='local/dir')
 ```
 
  
