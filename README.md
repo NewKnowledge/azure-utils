@@ -4,9 +4,11 @@ A set of utilities for interacting with Azure Cloud from Python. Most of the fun
 
 ## Installation
 
-Clone from Github (this isn't on pypi yet).
+Clone from Github (this isn't on pypi yet), then install the package:
 
 `git clone https://github.com/NewKnowledge/azure-utils.git`
+
+`cd azure-utils && python setup.py install`
 
 ## Azure Setup and Authentication
 
