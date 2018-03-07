@@ -6,11 +6,17 @@ from dotenv import load_dotenv
 from azure.datalake.store import core, lib, multithread
 
 
-def datalake_upload(datalake_client, source_filepaths, destination_dir='uploads'):
+def datalake_upload(datalake_client, source_filepaths, destination_dir='uploads', verbose=False):
     ''' uploads files to the data lake given the local filepaths '''
-    for source in source_filepaths:
-        # datalake_client.put(source, target_dir)  # non-multithread alternative
+
+    n_files = len(source_filepaths)
+    print('uploading', n_files, 'and writing to remote', destination_dir)
+
+    for i, source in enumerate(source_filepaths):
         filename = source.split('/')[-1]
+        if verbose:
+            print('uploading', source, 'number', i, 'of', n_files)
+        # datalake_client.put(source, target_dir)  # non-multithread alternative
         multithread.ADLUploader(datalake_client,
                                 lpath=source,
                                 rpath=join(destination_dir, filename),
@@ -18,12 +24,21 @@ def datalake_upload(datalake_client, source_filepaths, destination_dir='uploads'
                                 overwrite=True,
                                 buffersize=4194304,
                                 blocksize=4194304)
+    print('upload complete')
 
 
-def datalake_download(datalake_client, source_filepaths, destination_dir='datalake-downloads'):
+def datalake_download(datalake_client, source_filepaths, destination_dir='datalake-downloads', verbose=False):
     ''' downloads files from the data lake given the remote filepaths '''
-    for source in source_filepaths:
+
+    n_files = len(source_filepaths)
+    print('downloading', n_files, 'and writing to local', destination_dir)
+
+    for i, source in enumerate(source_filepaths):
         filename = source.split('/')[-1]
+        if verbose:
+            print('downloading', source, 'number', i, 'of', n_files)
+
+        # datalake_client.get  # non-multithread alternative
         multithread.ADLDownloader(datalake_client,
                                   lpath=join(destination_dir, filename),
                                   rpath=source,
@@ -31,6 +46,7 @@ def datalake_download(datalake_client, source_filepaths, destination_dir='datala
                                   overwrite=True,
                                   buffersize=4194304,
                                   blocksize=4194304)
+    print('download complete')
 
 
 def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_secret=None, envfile='datalake.env'):
