@@ -38,7 +38,7 @@ def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_
     # unless all vars are passed in, load env vars
     if not (store_name and tenant_id and client_id and client_secret):
         # load azure data lake environment variables
-        dotenv_path = join(dirname(__file__), envfile)
+        dotenv_path = join(os.getcwd(), envfile)
         load_dotenv(dotenv_path)
 
     # set vars to env values by default
