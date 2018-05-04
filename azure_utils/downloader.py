@@ -44,6 +44,8 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.
     data = []
     for filename in files:
         try:
+            if '_tmp' in filename:
+                continue
             with client.open(filename, 'rb') as fh:
                 tmp_string = str(fh.read().decode(encoding='utf-8'))
                 tmp = '[' + ','.join(f for f in tmp_string.splitlines()) + ']'
@@ -51,8 +53,6 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.
         except RuntimeError as err:
             print(err)
             break
-
-    return data
 
 
 if __name__ == '__main__':
