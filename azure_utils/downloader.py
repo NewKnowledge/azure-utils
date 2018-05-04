@@ -43,6 +43,8 @@ def get_data(date=None, index=None):
     # read files in as JSON array
     data = []
     for filename in files:
+        if '_tmp' in filename:
+            continue
         with client.open(filename, 'rb') as fh:
             tmp_string = str(fh.read().decode(encoding='utf-8'))
             tmp = '[' + ','.join([f for f in tmp_string.splitlines()]) + ']'
@@ -50,6 +52,6 @@ def get_data(date=None, index=None):
     return data
 
 if __name__ == '__main__':
-    get_data(date=date.today() - timedelta(days=1), index='disney')
+    get_data(date=date.today(), index='disney')
 
 
