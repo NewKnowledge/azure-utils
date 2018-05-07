@@ -53,7 +53,7 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.
         except RuntimeError as err:
             print(err)
             break
-
+    return data
 
 if __name__ == '__main__':
     get_data(date=date.today() - timedelta(days=1), index='disney')
