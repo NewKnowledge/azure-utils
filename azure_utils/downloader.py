@@ -8,6 +8,10 @@ import pandas as pd
 from azure.datalake.store import core, lib, multithread
 from dotenv import load_dotenv
 
+# default keys to keep from adl json records
+KEEP_KEYS = ['content', 'collectedAt', 'publishedAt', 'createdAt', 'contentId', 'authorScreenName', 'authorUserId',
+             'connectionType', 'parentScreenName', 'parentUserId', 'parentContentId']
+
 
 def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_secret=None, envfile='datalake.env'):
     ''' returns an Azure data lake filesystem client '''
@@ -27,7 +31,14 @@ def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_
     return core.AzureDLFileSystem(token, store_name=store_name)
 
 
-def dataframe_generator(date=date.today(), index='disney', store_name='sociallake', envfile='datalake.env', prefix='/streamsets/prod', keep_cols=None, remove_duplicates=True):
+def dataframe_generator(date=date.today(),
+                        index='disney',
+                        store_name='sociallake',
+                        envfile='datalake.env',
+                        prefix='/streamsets/prod',
+                        keep_cols=None,
+                        remove_duplicates=False,
+                        include_retweets=False):
     ''' generator function for data from Azure Data Lake files. converts json files into pandas dataframes '''
 
     if not isinstance(date, str):
@@ -42,31 +53,33 @@ def dataframe_generator(date=date.today(), index='disney', store_name='sociallak
         print('file', i+1, 'of', len(files))
 
         if '_tmp' in filename:
-            print('skipping temp')
+            print('skipping temp file', filename)
             continue
 
         try:
             with client.open(filename, 'rb') as adl_file:
-                print('reading adl file')
                 json_string = adl_file.read().decode(encoding='utf-8')
-                print('parsin json string into pandas dataframe')
                 file_df = pd.read_json(json_string, lines=True, orient='records')
-                # print('splitting lines')
                 file_df = file_df[keep_cols] if keep_cols else file_df
-                # json_string = '[' + ','.join(json_string.splitlines()) + ']'
-                # print('pandas reading json')
-                #  = pd.read_json(json_string)
+
+                if not include_retweets:
+                    n_rows = len(file_df)
+                    print('dropping retweets')
+                    file_df = file_df[file_df['connectionType'] == 'retweet']
+                    print('dropped', n_rows - len(file_df), 'retweets')
 
                 if remove_duplicates:
-                    # remove duplicates treating all non-dict, non-list col values as unique id
+                    # remove duplicates treating combination of all non-dict, non-list col values as unique id
                     hashable_cols = [col for col in file_df.columns
                                      if not isinstance(file_df[col][0], list)
                                      and not isinstance(file_df[col][0], dict)
                                      ]
                     n_rows = len(file_df)
+                    print('dropping duplicates')
                     file_df.drop_duplicates(inplace=True, subset=hashable_cols)
-                    print('dropped', n_rows - len(file_df))
+                    print('dropped', n_rows - len(file_df), 'duplicates')
 
+                print('yielding', len(file_df), 'samples')
                 yield file_df
 
         except RuntimeError as err:
@@ -162,14 +175,16 @@ def upload_datalake_file(remote_path='test.txt', local_path='./test.txt', store_
 
 
 def test_dataframe_generator():
-
+    #
     data_gen = dataframe_generator(
         date=date.today(),
         index='disney',
         store_name='sociallake',
         envfile='datalake.env',
         prefix='/streamsets/prod',
-        keep_cols=['content', 'createdAt'])
+        keep_cols=KEEP_KEYS,
+        include_retweets=False,
+    )  # ['content', 'createdAt']
 
     # full_df = pd.concat(next(data_gen) for _ in range(2))
     full_df = pd.concat(df for df in data_gen)
@@ -183,7 +198,7 @@ def test_dataframe_generator():
     print('include cols', str_cols)
     full_df.drop_duplicates(inplace=True, subset=str_cols)
 
-    print('dropped:', n_rows - len(full_df))
+    print('dropped:', n_rows - len(full_df), 'duplicates')
     # TODO dedupe with more column types
 
 
