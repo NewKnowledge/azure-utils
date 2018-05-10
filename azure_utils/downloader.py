@@ -79,7 +79,7 @@ def list_datalake_files(path, store_name='nkdsdevdatalake', envfile='/data_scien
     client = get_datalake_client(store_name=store_name, envfile=envfile)
     return client.ls(path)
 
-def get_datalake_file(remote_path='test.txt', local_path='./test.txt.', store_name='nkdsdevdatalake', 
+def download_datalake_file(remote_path='test.txt', local_path='./test.txt.', store_name='nkdsdevdatalake', 
                         envfile='/data_science_datalake.env', overwrite=True):
     ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
 
@@ -89,7 +89,7 @@ def get_datalake_file(remote_path='test.txt', local_path='./test.txt.', store_na
     multithread.ADLDownloader(client, lpath=local_path, rpath=remote_path,
                                 nthreads=4, overwrite=overwrite, buffersize=2**24, blocksize=2**24)
 
-def write_datalake_file(remote_path='test.txt', local_path='./test.txt', store_name='nkdsdevdatalake', 
+def upload_datalake_file(remote_path='test.txt', local_path='./test.txt', store_name='nkdsdevdatalake', 
                         envfile='/data_science_datalake.env', overwrite=True):
     ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
 
