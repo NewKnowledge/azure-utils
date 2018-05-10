@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from dotenv import load_dotenv
 
-from azure.datalake.store import core, lib
+from azure.datalake.store import core, lib, multithread
 
 
 def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_secret=None, envfile='datalake.env'):
@@ -26,10 +26,13 @@ def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_
     return core.AzureDLFileSystem(token, store_name=store_name)
 
 
-def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.env'):
+def get_data(date=None, index=None, store_name='sociallake', envfile='/social_datalake.env'):
+    return get_social_data(date=date, index=index, store_name=store_name, envfile=envfile)
+
+def get_social_data(date=None, index=None, store_name='sociallake', envfile='/social_datalake.env', prefix='/streamsets/prod'):
     ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
     if date is None or index is None:
-        raise Exception("Please provide keyword args 'date' and 'index'")
+        raise Exception("Please provide keyword args 'date'=datetime.date object and 'index'")
 
     # validate date input
     date = date.isoformat()
@@ -38,7 +41,7 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.
     client = get_datalake_client(store_name=store_name, envfile=envfile)
 
     # list out files for that day
-    files = client.ls("/streamsets/prod/{0}/{1}".format(index, date))
+    files = client.ls("{0}/{1}/{2}".format(prefix, index, date))
 
     # read files in as JSON array
     data = []
@@ -55,5 +58,54 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/datalake.
             break
     return data
 
+def list_social_indices(store_name='sociallake', envfile='/social_datalake.env'):
+    client = get_datalake_client(store_name=store_name, envfile=envfile)
+    return client.ls("/streamsets/prod")
+
+def get_datalake_file_handle(path, mode, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
+    client = get_datalake_client(store_name=store_name, envfile=envfile)
+    return client.open(path, mode)
+
+def get_datalake_file_handle_read(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
+    return get_dalake_file_handle(path, 'rb', store_name=store_name, envfile=envfile)
+
+def get_datalake_file_handle_write(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
+    return get_dalake_file_handle(path, 'wb', store_name=store_name, envfile=envfile)
+
+def get_datalake_file_handle_append(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
+    return get_dalake_file_handle(path, 'ab', store_name=store_name, envfile=envfile)
+
+def list_datalake_files(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
+    client = get_datalake_client(store_name=store_name, envfile=envfile)
+    return client.ls(path)
+
+def download_datalake_file(remote_path='test.txt', local_path='./test.txt.', store_name='nkdsdevdatalake', 
+                        envfile='/data_science_datalake.env', overwrite=True):
+    ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
+
+    # validate index/folder name
+    client = get_datalake_client(store_name=store_name, envfile=envfile)
+
+    multithread.ADLDownloader(client, lpath=local_path, rpath=remote_path,
+                                nthreads=4, overwrite=overwrite, buffersize=2**24, blocksize=2**24)
+
+def upload_datalake_file(remote_path='test.txt', local_path='./test.txt', store_name='nkdsdevdatalake', 
+                        envfile='/data_science_datalake.env', overwrite=True):
+    ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
+
+    # validate index/folder name
+    client = get_datalake_client(store_name=store_name, envfile=envfile)
+
+    multithread.ADLUploader(client, lpath=local_path, rpath=remote_path,
+                                nthreads=4, overwrite=overwrite, buffersize=2**24, blocksize=2**24)
+
+
+
 if __name__ == '__main__':
-    get_data(date=date.today() - timedelta(days=1), index='disney')
+    #get_social_data(date=date.today() - timedelta(days=1), index='disney')
+    print(list_social_indices())
+    #with get_datalake_file_handle('/test.txt', 'ab') as f:
+    #    f.write("\nDOUBLE SUCCESS!!".encode('utf-8'))
+    #write_datalake_file(remote_path='/this/is/a/test.txt', local_path='./test.txt')
+    #get_datalake_file(remote_path='/this/is/a/test.txt', local_path='/test_out.txt')
+

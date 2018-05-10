@@ -1,2 +1,2 @@
 from .datalake import get_datalake_client, datalake_upload, datalake_download
-from .downloader import get_data
+from .downloader import get_data, get_datalake_file_handle, get_datalake_file_handle_append, get_datalake_file_handle_read, get_datalake_file_handle_write, get_social_data, list_datalake_files, list_social_indices, upload_datalake_file, download_datalake_file, get_datalake_client
