@@ -67,13 +67,13 @@ def get_datalake_file_handle(path, mode, store_name='nkdsdevdatalake', envfile='
     return client.open(path, mode)
 
 def get_datalake_file_handle_read(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
-    return get_dalake_file_handle(path, 'rb', store_name=store_name, envfile=envfile)
+    return get_datalake_file_handle(path, 'rb', store_name=store_name, envfile=envfile)
 
 def get_datalake_file_handle_write(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
-    return get_dalake_file_handle(path, 'wb', store_name=store_name, envfile=envfile)
+    return get_datalake_file_handle(path, 'wb', store_name=store_name, envfile=envfile)
 
 def get_datalake_file_handle_append(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
-    return get_dalake_file_handle(path, 'ab', store_name=store_name, envfile=envfile)
+    return get_datalake_file_handle(path, 'ab', store_name=store_name, envfile=envfile)
 
 def list_datalake_files(path, store_name='nkdsdevdatalake', envfile='/data_science_datalake.env'):
     client = get_datalake_client(store_name=store_name, envfile=envfile)
