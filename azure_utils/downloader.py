@@ -171,8 +171,8 @@ def test_dataframe_generator():
         prefix='/streamsets/prod',
         keep_cols=['content', 'createdAt'])
 
-    full_df = pd.concat(next(data_gen) for _ in range(2))
-    # full_df = pd.concat(df for df in data_gen)
+    # full_df = pd.concat(next(data_gen) for _ in range(2))
+    full_df = pd.concat(df for df in data_gen)
 
     print('pre dupe:', full_df.shape)
     n_rows = len(full_df)
