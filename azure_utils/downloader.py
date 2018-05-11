@@ -2,7 +2,7 @@
 import json
 import os
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import pandas as pd
 from azure.datalake.store import core, lib, multithread
@@ -31,59 +31,63 @@ def get_datalake_client(store_name=None, tenant_id=None, client_id=None, client_
     return core.AzureDLFileSystem(token, store_name=store_name)
 
 
-def dataframe_generator(date=date.today(),
+def dataframe_generator(read_date=date.today(),
                         index='disney',
                         store_name='sociallake',
                         envfile='datalake.env',
                         prefix='/streamsets/prod',
                         keep_cols=None,
-                        remove_duplicates=False,
-                        include_retweets=False):
-    ''' generator function for data from Azure Data Lake files. converts json files into pandas dataframes '''
+                        include_retweets=False,
+                        return_batches=False,
+                        verbose=False,
+                        ):
+    ''' Generator function for reading all data for given date from Azure Data Lake given store and index.
+        Converts json files into rows or batches of pandas dataframes. '''
 
-    if not isinstance(date, str):
-        date = date.isoformat()
+    # TODO remove nan, do other common prep (in batches before yielding)?
+
+    vprint = print if verbose else lambda x: None
+    if isinstance(read_date, date):
+        read_date = read_date.isoformat()
+    elif not isinstance(read_date, str):
+        raise Exception('date must be a string or datetime.date object')
 
     client = get_datalake_client(store_name=store_name, envfile=envfile)
 
-    print('finding files')
+    vprint('finding files')
     # list out files for that day
-    files = client.ls("{0}/{1}/{2}".format(prefix, index, date))
+    files = client.ls("{0}/{1}/{2}".format(prefix, index, read_date))
     for i, filename in enumerate(files):
-        print('file', i+1, 'of', len(files))
+        vprint('file', i+1, 'of', len(files))
 
         if '_tmp' in filename:
-            print('skipping temp file', filename)
+            vprint('skipping temp file', filename)
             continue
 
         try:
             with client.open(filename, 'rb') as adl_file:
+                # read json string from adl file
                 json_string = adl_file.read().decode(encoding='utf-8')
                 file_df = pd.read_json(json_string, lines=True, orient='records')
+
+                # if keep_cols specified, drop all other cols
                 file_df = file_df[keep_cols] if keep_cols else file_df
 
                 if not include_retweets:
                     n_rows = len(file_df)
-                    print('dropping retweets')
-                    file_df = file_df[file_df['connectionType'] == 'retweet']
-                    print('dropped', n_rows - len(file_df), 'retweets')
+                    vprint('dropping retweets')
+                    file_df = file_df[file_df['connectionType'] != 'retweet']
+                    vprint('dropped', n_rows - len(file_df), 'retweets')
 
-                if remove_duplicates:
-                    # remove duplicates treating combination of all non-dict, non-list col values as unique id
-                    hashable_cols = [col for col in file_df.columns
-                                     if not isinstance(file_df[col][0], list)
-                                     and not isinstance(file_df[col][0], dict)
-                                     ]
-                    n_rows = len(file_df)
-                    print('dropping duplicates')
-                    file_df.drop_duplicates(inplace=True, subset=hashable_cols)
-                    print('dropped', n_rows - len(file_df), 'duplicates')
-
-                print('yielding', len(file_df), 'samples')
-                yield file_df
+                vprint('yielding', len(file_df), 'samples')
+                if return_batches:
+                    yield file_df
+                else:
+                    for row in file_df.iterrows():
+                        yield row[1]  # iterrows returns (row_num, Series) pair
 
         except RuntimeError as err:
-            print(err)
+            vprint(err)
             break
 
 
@@ -91,7 +95,7 @@ def get_data(date=None, index=None, store_name='sociallake', envfile='/social_da
     return get_social_data(date=date, index=index, store_name=store_name, envfile=envfile)
 
 
-def get_social_data(date=None, index=None, store_name='sociallake', envfile='/social_datalake.env', prefix='/streamsets/prod'):
+def get_social_data(date=None, index=None, store_name='sociallake', envfile='/social_datalake.env', prefix='/streamsets/prod', verbose=True):
     ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
     if date is None or index is None:
         raise Exception("Please provide keyword args 'date'=datetime.date object and 'index'")
@@ -111,7 +115,6 @@ def get_social_data(date=None, index=None, store_name='sociallake', envfile='/so
     # read files in as JSON array
     data = []
     for i, filename in enumerate(files):
-        print('file', i+1, 'of', len(files))
         try:
             if '_tmp' in filename:
                 continue
@@ -165,7 +168,7 @@ def download_datalake_file(remote_path='test.txt', local_path='./test.txt.', sto
 
 def upload_datalake_file(remote_path='test.txt', local_path='./test.txt', store_name='nkdsdevdatalake',
                          envfile='/data_science_datalake.env', overwrite=True):
-    ''' Download data for Azure Data Lake into memory and return list of parsed json objects '''
+    ''' Upload data from a local file to Azure Data Lake '''
 
     # validate index/folder name
     client = get_datalake_client(store_name=store_name, envfile=envfile)
@@ -175,31 +178,53 @@ def upload_datalake_file(remote_path='test.txt', local_path='./test.txt', store_
 
 
 def test_dataframe_generator():
-    #
-    data_gen = dataframe_generator(
-        date=date.today(),
+    data_row_gen = dataframe_generator(
+        read_date=date.today(),
         index='disney',
         store_name='sociallake',
         envfile='datalake.env',
         prefix='/streamsets/prod',
         keep_cols=KEEP_KEYS,
         include_retweets=False,
-    )  # ['content', 'createdAt']
+        verbose=True,
+    )
 
-    # full_df = pd.concat(next(data_gen) for _ in range(2))
-    full_df = pd.concat(df for df in data_gen)
+    data_batch_gen = dataframe_generator(
+        read_date=date.today(),
+        index='disney',
+        store_name='sociallake',
+        envfile='datalake.env',
+        prefix='/streamsets/prod',
+        keep_cols=KEEP_KEYS,
+        include_retweets=False,
+        verbose=True,
+        return_batches=True,
+    )
 
-    print('pre dupe:', full_df.shape)
+    # create dataframe from row generator
+    start_time = time.time()
+    full_df = pd.DataFrame(row for row in data_row_gen)
+    print('rows took time', time.time()-start_time)
+
+    print(full_df.shape)
+
+    print('concat batches from generator')
+    start_time = time.time()
+    full_df = pd.concat(df for df in data_batch_gen)
+    print('batches took time', time.time()-start_time)
+
+    print(full_df.shape)
+
+    print('removing duplicates')
     n_rows = len(full_df)
     str_cols = [col for col in full_df.columns
                 if not isinstance(full_df[col][0], list)
                 and not isinstance(full_df[col][0], dict)
                 ]
-    print('include cols', str_cols)
     full_df.drop_duplicates(inplace=True, subset=str_cols)
 
     print('dropped:', n_rows - len(full_df), 'duplicates')
-    # TODO dedupe with more column types
+    # TODO dedupe with more column types (list, dict?)
 
 
 if __name__ == '__main__':
