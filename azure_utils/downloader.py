@@ -201,14 +201,14 @@ def test_dataframe_generator():
         return_batches=True,
     )
 
-    # create dataframe from row generator
+    print('create dataframe from row generator')
     start_time = time.time()
     full_df = pd.DataFrame(row for row in data_row_gen)
     print('rows took time', time.time()-start_time)
 
     print(full_df.shape)
 
-    print('concat batches from generator')
+    print('concat batches from df generator')
     start_time = time.time()
     full_df = pd.concat(df for df in data_batch_gen)
     print('batches took time', time.time()-start_time)
