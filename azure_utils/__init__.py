@@ -1,5 +1,4 @@
-from .datalake import get_datalake_client, datalake_upload, datalake_download
-from .downloader import (get_data,
+from .datalake import (get_data,
                          get_social_data,
                          get_datalake_client,
                          get_datalake_file_handle,
@@ -8,7 +7,6 @@ from .downloader import (get_data,
                          get_datalake_file_handle_write,
                          download_datalake_file,
                          upload_datalake_file,
-                         dataframe_generator,
                          list_datalake_files,
                          list_social_indices,
                          )
